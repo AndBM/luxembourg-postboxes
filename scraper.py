@@ -1,3 +1,4 @@
+import json
 import urllib.request as ur
 
 filename = "addresses.txt"
@@ -16,12 +17,10 @@ for i in range(len(cities)):
     url = baseUrl + cities[i] + "&page=0"
     request = ur.Request(url,None,headers)
     response = ur.urlopen(request)
-    webContent = str(response.read())
+    response_text = response.read().decode("utf-8", errors="replace")
+    webContent = json.loads(response_text)
 
-    # Find out how many pages there are
-    beg1 = webContent.find("totalPages")+12
-    end1 = webContent.find("numberOfElements")-2
-    pages = int(webContent[ beg1:end1 ])
+    pages = webContent["totalPages"]
 
     for j in range(pages):
         print("Page " + str(j+1))
@@ -29,22 +28,16 @@ for i in range(len(cities)):
         url = baseUrl + cities[i] + "&page=" + str(j)
         request = ur.Request(url,None,headers)
         response = ur.urlopen(request)
-        webContent = str(response.read())
+        response_text = response.read().decode("utf-8", errors="replace")
+        webContent = json.loads(response_text)
 
-        # Initialize
-        beg2 = webContent.find("rue")+6
-        end2 = webContent.find("localite")-3
-        stopper = webContent.find("sort")
-        while  beg2 < stopper :
-            # Read each address
-            address = webContent[ beg2:end2 ]
+        for entry in webContent["content"]:
+            address = entry["rue"].strip()
             addresses.append(address)
-            beg2 = webContent.find("rue", beg2)+6
-            end2 = webContent.find("localite", end2+4)-3
 
     with open(filename, 'w') as file:
-        for i in range(len(addresses)):
+        for address in addresses:
             if cities[i] == "LUXEMBOURG":
-                file.write("Luxembourg City, " + addresses[i] + "\n")
+                file.write("Luxembourg City, " + address + "\n")
             else:
-                file.write(cities[i] + ", " + addresses[i] + "\n")
+                file.write(cities[i] + ", " + address + "\n")
